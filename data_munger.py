@@ -3,39 +3,45 @@ import os
 
 DATA_DIRECTORY = "./data"
 OUTPUT_FILE_PATH = "./formatted_data.csv"
+OUTPUT_HEADER = ["sales", "date", "region"]
+TARGET_PRODUCT = "pink morsel"
 
-# open the output file
-with open(OUTPUT_FILE_PATH, "w") as output_file:
-    writer = csv.writer(output_file)
 
-    # add a csv header
-    header = ["sales", "date", "region"]
-    writer.writerow(header)
+def parse_sale(raw_price: str, quantity: str) -> float:
+    unit_price = float(raw_price[1:])
+    return unit_price * int(quantity)
 
-    # iterate through all files in the data directory
-    for file_name in os.listdir(DATA_DIRECTORY):
-        # open the csv file for reading
-        with open(f"{DATA_DIRECTORY}/{file_name}", "r") as input_file:
-            reader = csv.reader(input_file)
-            # iterate through each row in the csv file
-            row_index = 0
-            for input_row in reader:
-                # if this row is not the csv header, process it
-                if row_index > 0:
-                    # collect data from row
-                    product = input_row[0]
-                    raw_price = input_row[1]
-                    quantity = input_row[2]
-                    transaction_date = input_row[3]
-                    region = input_row[4]
 
-                    # if this is a pink morsel transaction, process it
-                    if product == "pink morsel":
-                        # finish formatting data
-                        price = float(raw_price[1:])
-                        sale = price * int(quantity)
+def iter_input_rows(input_path: str):
+    with open(input_path, "r") as input_file:
+        reader = csv.reader(input_file)
+        for row_index, input_row in enumerate(reader):
+            if row_index == 0:
+                continue
+            yield input_row
 
-                        # write the row to output file
-                        output_row = [sale, transaction_date, region]
-                        writer.writerow(output_row)
-                row_index += 1
+
+def build_output_row(input_row):
+    raw_price = input_row[1]
+    quantity = input_row[2]
+    transaction_date = input_row[3]
+    region = input_row[4]
+    sale = parse_sale(raw_price, quantity)
+    return [sale, transaction_date, region]
+
+
+def main():
+    with open(OUTPUT_FILE_PATH, "w") as output_file:
+        writer = csv.writer(output_file)
+        writer.writerow(OUTPUT_HEADER)
+
+        for file_name in os.listdir(DATA_DIRECTORY):
+            input_path = f"{DATA_DIRECTORY}/{file_name}"
+            for input_row in iter_input_rows(input_path):
+                product = input_row[0]
+                if product == TARGET_PRODUCT:
+                    writer.writerow(build_output_row(input_row))
+
+
+if __name__ == "__main__":
+    main()
